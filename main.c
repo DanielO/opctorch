@@ -375,23 +375,27 @@ main(int argc, char **argv)
 	fds = NULL;
 	doquit = 0;
 	while (!doquit) {
-		int numfds;
-		numfds = numclients;
+		int numfds, numlisten;
+
+		numlisten = 0;
 		if (listensock4 != -1)
-			numfds++;
+			numlisten++;
 		if (listensock6 != -1)
-			numfds++;
+			numlisten++;
+		numfds = numclients + numlisten;
 		fds = realloc(fds, sizeof(fds[0]) * numfds);
 		j = 0;
 		if (listensock4 != -1) {
 			fds[j].fd = listensock4;
 			fds[j].events = POLLRDNORM;
-			fds[j++].revents = 0;
+			fds[j].revents = 0;
+			j++;
 		}
 		if (listensock6 != -1) {
 			fds[j].fd = listensock6;
 			fds[j].events = POLLRDNORM;
-			fds[j++].revents = 0;
+			fds[j].revents = 0;
+			j++;
 		}
 
 		SLIST_FOREACH(clp, &clients, entries) {
@@ -407,8 +411,8 @@ main(int argc, char **argv)
 			break;
 		}
 		for (i = 0; i < numfds; i++) {
-			/* Slot 0 & 1 are listen sockets, check for new connections */
-			if (i < 2) {
+			/* Slot 0 & 1 may be listen sockets, check for new connections */
+			if (i < numlisten) {
 				int tmpfd;
 				socklen_t addrlen;
 				struct sockaddr saddr;
