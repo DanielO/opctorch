@@ -28,6 +28,7 @@ typedef struct {
 	RGBPixel	pixels[0];
 } __attribute((packed)) pixData_t;
 
+static struct config_t start_conf;
 static pixData_t *pixData = NULL;
 static int pixDataSz;
 static uint16_t	numleds;
@@ -79,14 +80,6 @@ default_conf(struct config_t *conf)
 	conf->torch_levels = -1;
 	conf->wound_cwise = -1;
 	conf->torch_chan = -1;
-
-	reset_conf(conf);
-}
-
-/* Reset run-time configuration */
-void
-reset_conf(struct config_t *conf)
-{
 	conf->brightness = 255;
 	conf->fade_base = 140;
 	conf->text_intensity = 200;
@@ -117,6 +110,13 @@ reset_conf(struct config_t *conf)
 	conf->blue_energy = 0;
 	conf->upside_down = 0;
 	conf->update_rate = 30;
+}
+
+/* Reset run-time configuration */
+void
+reset_conf(struct config_t *conf)
+{
+	memcpy(conf, &start_conf, sizeof(*conf));
 }
 
 /* Update conf based on ini file */
@@ -211,6 +211,9 @@ ini2conf(dictionary *ini, struct config_t *conf)
 int
 create_torch(int s, struct config_t *conf)
 {
+
+	/* Stash a copy of the conf for later resetting */
+	memcpy(&start_conf, conf, sizeof(*conf));
 
 	sock = s;
 
