@@ -79,6 +79,14 @@ default_conf(struct config_t *conf)
 	conf->torch_levels = -1;
 	conf->wound_cwise = -1;
 	conf->torch_chan = -1;
+
+	reset_conf(conf);
+}
+
+/* Reset run-time configuration */
+void
+reset_conf(struct config_t *conf)
+{
 	conf->brightness = 255;
 	conf->fade_base = 140;
 	conf->text_intensity = 200;
@@ -261,8 +269,10 @@ run_torch(struct config_t *conf)
 		timersub(&now, &then, &now);
 		t = now.tv_sec * 1000000 + now.tv_usec;
 		sl = (1000000 / conf->update_rate) - t;
+#if 0
 		if (frame % 10 == 0)
 			printf("%5d: Loop took %5d usec, sleeping %5d usec\n", frame, t, sl);
+#endif
 		assert(pthread_mutex_unlock(&torch_mtx) == 0);
 
 		usleep(sl);
@@ -325,13 +335,13 @@ splitargs(char *cmd, char **argv, int nargv, int *argc)
 
 void
 cmd_torch(struct config_t *conf, const char *from, char *cmd)
-{	
+{
 	char *argv[10], *origline, *tmp;
 	int argc;
 
 	origline = strdup(cmd);
 	splitargs(cmd, argv, sizeof(argv) / sizeof(argv[0]), &argc);
-	
+
 	assert(pthread_mutex_lock(&torch_mtx) == 0);
 
 	fprintf(stderr, "Command from %s: %s\n", from, argv[0]);
@@ -348,6 +358,8 @@ cmd_torch(struct config_t *conf, const char *from, char *cmd)
 			setVal(conf, argv[1], argv[2]);
 		else
 			warnx("Bad usage for set command");
+	} else if (!strcmp(argv[0], "reset")) {
+		reset_conf(conf);
 	} else if (!strcmp(argv[0], "dump")) {
 		dumpVals(conf);
 	}

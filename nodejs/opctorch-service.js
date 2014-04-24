@@ -7,6 +7,7 @@ var OPCTorchMessageRGBCharacteristic = require('./opctorch-message-rgb-character
 var OPCTorchFlameRGBCharacteristic = require('./opctorch-flame-rgb-characteristic');
 var OPCTorchBrightnessCharacteristic = require('./opctorch-brightness-characteristic');
 var OPCTorchMessageCharacteristic = require('./opctorch-message-characteristic');
+var OPCTorchResetCharacteristic = require('./opctorch-reset-characteristic');
 
 function OPCTorchService(opctorch) {
   OPCTorchService.super_.call(this, {
@@ -16,6 +17,7 @@ function OPCTorchService(opctorch) {
       new OPCTorchFlameRGBCharacteristic(opctorch),
       new OPCTorchBrightnessCharacteristic(opctorch),
       new OPCTorchMessageCharacteristic(opctorch),
+      new OPCTorchResetCharacteristic(opctorch),
     ]
   });
 }
