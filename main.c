@@ -34,11 +34,13 @@ main(int argc, char **argv)
 {
 	char *srvhost, *srvport;
 	const char *cause = NULL;
-	int sock, rtn, i, n;
-	in_addr_t addr;
+	int sock, rtn;
 	struct sockaddr_in saddr;
 	struct addrinfo addrhint, *res, *res0;
+#if 0
+	int i;
 	uint8_t buf[4 + NLEDS * 3];
+#endif
 	struct config_t conf;
 
 	if (argc != 2) {

@@ -35,8 +35,6 @@ uint8_t *energyMode = NULL; // mode how energy is calculated for this point
 
 static const uint8_t energymap[32] = {0, 64, 96, 112, 128, 144, 152, 160, 168, 176, 184, 184, 192, 200, 200, 208, 208, 216, 216, 224, 224, 224, 232, 232, 232, 240, 240, 240, 240, 248, 248, 248};
 
-static void	setColour(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue);
-static void	getColour(uint16_t lednum, uint8_t *red, uint8_t *green, uint8_t *blue);
 static void	setColourDimmed(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue, uint8_t bright);
 static void	sendLEDs(void);
 static uint16_t	random16(uint16_t aMinOrMax, uint16_t aMax);
@@ -166,17 +164,6 @@ run_torch(int s, struct config_t *conf)
 }
 
 static void
-setColour(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue)
-{
-
-	if (lednum >= numleds)
-		return;
-	pixData->pixels[lednum].red = red;
-	pixData->pixels[lednum].green = green;
-	pixData->pixels[lednum].blue = blue;
-}
-
-static void
 setColourDimmed(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue, uint8_t bright)
 {
 
@@ -185,17 +172,6 @@ setColourDimmed(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue, uint8
 	pixData->pixels[lednum].red = (red * bright) >> 8;
 	pixData->pixels[lednum].green = (green * bright) >> 8;
 	pixData->pixels[lednum].blue = (blue * bright) >> 8;
-}
-
-static void
-getColour(uint16_t lednum, uint8_t *red, uint8_t *green, uint8_t *blue)
-{
-
-	if (lednum >= numleds)
-		return;
-	*red = pixData->pixels[lednum].red;
-	*green = pixData->pixels[lednum].green;
-	*blue = pixData->pixels[lednum].blue;
 }
 
 static void
@@ -244,28 +220,6 @@ increase(uint8_t *aByte, uint8_t aAmount, uint8_t aMax)
 		*aByte = aMax;
 	else
 		*aByte = (uint8_t)r;
-}
-
-/* Input a value 0 to 255 to get a color value.
- * The colours are a transition r - g - b - back to r.
- */
-static void
-wheel(uint8_t WheelPos, uint8_t *red, uint8_t *green, uint8_t *blue) {
-	if (WheelPos < 85) {
-		*red = WheelPos * 3;
-		*green = 255 - WheelPos * 3;
-		*blue = 0;
-	} else if(WheelPos < 170) {
-		WheelPos -= 85;
-		*red = 255 - WheelPos * 3;
-		*green = 0;
-		*blue = WheelPos * 3;
-	} else {
-		WheelPos -= 170;
-		*red = 0;
-		*green = WheelPos * 3;
-		*blue = 255 - WheelPos * 3;
-	}
 }
 
 static void
