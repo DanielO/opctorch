@@ -38,8 +38,8 @@ static const uint8_t energymap[32] = {0, 64, 96, 112, 128, 144, 152, 160, 168, 1
 static void	setColourDimmed(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue, uint8_t bright);
 static void	sendLEDs(void);
 static uint16_t	random16(uint16_t aMinOrMax, uint16_t aMax);
-static void	reduce(uint8_t *aByte, uint8_t aAmount, uint8_t aMin);
-static void	increase(uint8_t *aByte, uint8_t aAmount, uint8_t aMax);
+static void	sat8sub(uint8_t *aByte, uint8_t aAmount);
+static void	sat8add(uint8_t *aByte, uint8_t aAmount);
 static void	resetEnergy(void);
 static void	calcNextEnergy(struct config_t *);
 static void	calcNextColours(struct config_t *);
@@ -199,25 +199,25 @@ random16(uint16_t aMinOrMax, uint16_t aMax)
 }
 
 static void
-reduce(uint8_t *aByte, uint8_t aAmount, uint8_t aMin)
+sat8sub(uint8_t *aByte, uint8_t aAmount)
 {
 	int r;
 
 	r = *aByte - aAmount;
-	if (r < aMin)
-		*aByte = aMin;
+	if (r < 0)
+		*aByte = 0;
 	else
 		*aByte = (uint8_t)r;
 }
 
 static void
-increase(uint8_t *aByte, uint8_t aAmount, uint8_t aMax)
+sat8add(uint8_t *aByte, uint8_t aAmount)
 {
 	int r;
 
 	r = *aByte + aAmount;
-	if (r > aMax)
-		*aByte = aMax;
+	if (r > 255)
+		*aByte = 255;
 	else
 		*aByte = (uint8_t)r;
 }
@@ -249,7 +249,7 @@ calcNextEnergy(struct config_t *conf)
 			switch (m) {
 			case TORCH_SPARK:
 				// lose transfer up energy as long as there is any
-				reduce(&e, conf->spark_tfr, 0);
+				sat8sub(&e, conf->spark_tfr);
 				// cell above is temp spark, sucking up energy from this cell until empty
 				if (y < conf->torch_levels - 1) {
 					energyMode[i + conf->leds_per_level] = TORCH_SPARK_TEMP;
@@ -263,19 +263,19 @@ calcNextEnergy(struct config_t *conf)
 					// cell below is exhausted, becomes passive
 					energyMode[i - conf->leds_per_level] = TORCH_PASSIVE;
 					// gobble up rest of energy
-					increase(&e, e2, 255);
+					sat8add(&e, e2);
 					// loose some overall energy
 					e = ((int)e * conf->spark_cap) >>8;
 					// this cell becomes active spark
 					energyMode[i] = TORCH_SPARK;
 				} else {
-					increase(&e, conf->spark_tfr, 255);
+					sat8add(&e, conf->spark_tfr);
 				}
 				break;
 			case TORCH_PASSIVE:
 				e = ((int)e * conf->heat_cap) >> 8;
-				increase(&e, ((((int)currentEnergy[i - 1] + (int)currentEnergy[i + 1]) * conf->side_rad) >> 9) +
-				    (((int)currentEnergy[i - conf->leds_per_level] * conf->up_rad) >> 8), 255);
+				sat8add(&e, ((((int)currentEnergy[i - 1] + (int)currentEnergy[i + 1]) * conf->side_rad) >> 9) +
+				    (((int)currentEnergy[i - conf->leds_per_level] * conf->up_rad) >> 8));
 
 			default:
 				break;
@@ -309,9 +309,9 @@ calcNextColours(struct config_t *conf)
 				r = conf->red_bias;
 				g = conf->green_bias;
 				b = conf->blue_bias;
-				increase(&r, (eb * conf->red_energy) >> 8, 255);
-				increase(&g, (eb * conf->green_energy) >> 8, 255);
-				increase(&b, (eb * conf->blue_energy) >> 8, 255);
+				sat8add(&r, (eb * conf->red_energy) >> 8);
+				sat8add(&g, (eb * conf->green_energy) >> 8);
+				sat8add(&b, (eb * conf->blue_energy) >> 8);
 				setColourDimmed(i, r, g, b, conf->brightness);
 			} else {
 				// background, no energy
