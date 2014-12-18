@@ -46,10 +46,10 @@ static void	calcNextEnergy(void);
 static void	calcNextColours(void);
 static void	injectRandom(void);
 
-#define TORCH_PASSIVE 0 // Just environment, glob from nearby radiation
-#define TORCH_NOP 1 // No processing
-#define TORCH_SPARK 2 // Slowly loses energy, moves up
-#define TORCH_SPARK_TEMP 3 // a spark still getting energy from the level below
+#define TORCH_PASSIVE		0 // Just environment, glow from nearby radiation
+#define TORCH_NOP		1 // No processing
+#define TORCH_SPARK		2 // Slowly loses energy, moves up
+#define TORCH_SPARK_TEMP	3 // A spark still getting energy from the level below
 
 /* Run forever sending messages to socket */
 int
