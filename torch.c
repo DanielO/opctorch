@@ -29,9 +29,9 @@ static int pixDataSz;
 static uint16_t	numleds;
 static int	sock;
 
-uint8_t *currentEnergy = NULL; // current energy level
-uint8_t *nextEnergy = NULL; // next energy level
-uint8_t *energyMode = NULL; // mode how energy is calculated for this point
+static uint8_t *currentEnergy = NULL; // current energy level
+static uint8_t *nextEnergy = NULL; // next energy level
+static uint8_t *energyMode = NULL; // mode how energy is calculated for this point
 
 static const uint8_t energymap[32] = {0, 64, 96, 112, 128, 144, 152, 160, 168, 176, 184, 184, 192, 200, 200, 208, 208, 216, 216, 224, 224, 224, 232, 232, 232, 240, 240, 240, 240, 248, 248, 248};
 
