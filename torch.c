@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sysexits.h>
@@ -42,18 +43,54 @@ static uint16_t	random16(uint16_t aMinOrMax, uint16_t aMax);
 static void	reduce(uint8_t *aByte, uint8_t aAmount, uint8_t aMin);
 static void	increase(uint8_t *aByte, uint8_t aAmount, uint8_t aMax);
 static void	resetEnergy(void);
-static void	calcNextEnergy(void);
-static void	calcNextColours(void);
-static void	injectRandom(void);
+static void	calcNextEnergy(struct config_t *);
+static void	calcNextColours(struct config_t *);
+static void	injectRandom(struct config_t *);
 
 #define TORCH_PASSIVE		0 // Just environment, glow from nearby radiation
 #define TORCH_NOP		1 // No processing
 #define TORCH_SPARK		2 // Slowly loses energy, moves up
 #define TORCH_SPARK_TEMP	3 // A spark still getting energy from the level below
 
+/* Set default config */
+void
+default_conf(struct config_t *conf)
+{
+
+	memset(conf, 0, sizeof(*conf));
+	conf->leds_per_level = 11;
+	conf->torch_levels = 21;
+	conf->wound_cwise = 0;
+	conf->torch_chan = 1;
+	conf->brightness = 255;
+	conf->fade_base = 140;
+	conf->text_intensity = 255;
+	conf->txt_cycles_per_px = 5;
+	conf->fade_per_repeat = 15;
+	conf->text_base_line = 10;
+	conf->flame_min = 100;
+	conf->flame_max = 220;
+	conf->rnd_spark_prob = 2;
+	conf->spark_min = 200;
+	conf->spark_max = 255;
+	conf->spark_tfr = 40;
+	conf->spark_cap = 200;
+	conf->up_rad = 40;
+	conf->side_rad = 35;
+	conf->heat_cap = 0;
+	conf->red_bg = 0;
+	conf->green_bg = 0;
+	conf->blue_bg = 0;
+	conf->red_energy = 180;
+	conf->green_energy = 145;
+	conf->blue_energy = 0;
+	conf->upside_down = 0;
+	conf->update_rate = 30;
+}
+
 /* Run forever sending messages to socket */
 int
-run_torch(int s)
+run_torch(int s, struct config_t *conf)
 {
 	int err, sl, t, frame;
 	struct timeval then, now;
@@ -61,7 +98,7 @@ run_torch(int s)
 	err = frame = 0;
 	sock = s;
 
-	numleds = LEDS_PER_LEVEL * TORCH_LEVELS;
+	numleds = conf->leds_per_level * conf->torch_levels;
 	pixDataSz = sizeof(*pixData) + numleds * sizeof(pixData->pixels[0]);
 	if ((pixData = malloc(pixDataSz)) == NULL) {
 		err = -1;
@@ -80,7 +117,7 @@ run_torch(int s)
 		goto out;
 	}
 
-	pixData->header[0] = TORCH_CHAN;
+	pixData->header[0] = conf->torch_chan;
 	pixData->header[1] = 0; // Command: set LEDs
 	pixData->header[2] = (numleds * sizeof(pixData->pixels[0])) >> 8; // Length MSB
 	pixData->header[3] = (numleds * sizeof(pixData->pixels[0])) & 0xff; // Length LSB
@@ -92,15 +129,15 @@ run_torch(int s)
 		frame++;
 		gettimeofday(&then, NULL);
 		// XXX: text handling
-		injectRandom();
-		calcNextEnergy();
-		calcNextColours();
+		injectRandom(conf);
+		calcNextEnergy(conf);
+		calcNextColours(conf);
 
 		sendLEDs();
-			gettimeofday(&now, NULL);
-			timersub(&now, &then, &now);
-			t = now.tv_sec * 1000000 + now.tv_usec;
-			sl = (1000000 / UPDATE_RATE) - t;
+		gettimeofday(&now, NULL);
+		timersub(&now, &then, &now);
+		t = now.tv_sec * 1000000 + now.tv_usec;
+		sl = (1000000 / conf->update_rate) - t;
 		if (frame % 10 == 0)
 			printf("%5d: Loop took %5d usec, sleeping %5d usec\n", frame, t, sl);
 
@@ -232,7 +269,7 @@ wheel(uint8_t WheelPos, uint8_t *red, uint8_t *green, uint8_t *blue) {
 }
 
 static void
-resetEnergy()
+resetEnergy(void)
 {
 	int i;
 
@@ -245,46 +282,46 @@ resetEnergy()
 
 
 static void
-calcNextEnergy(void)
+calcNextEnergy(struct config_t *conf)
 {
 	int x, y, i;
 	uint8_t e, m, e2;
 
 	i = 0;
-	for (y = 0; y < TORCH_LEVELS; y++) {
-		for (x = 0; x < LEDS_PER_LEVEL; x++) {
+	for (y = 0; y < conf->torch_levels; y++) {
+		for (x = 0; x < conf->leds_per_level; x++) {
 			e = currentEnergy[i];
 			m = energyMode[i];
 			switch (m) {
 			case TORCH_SPARK:
 				// lose transfer up energy as long as there is any
-				reduce(&e, SPARK_TFR, 0);
+				reduce(&e, conf->spark_tfr, 0);
 				// cell above is temp spark, sucking up energy from this cell until empty
-				if (y < TORCH_LEVELS - 1) {
-					energyMode[i + LEDS_PER_LEVEL] = TORCH_SPARK_TEMP;
+				if (y < conf->torch_levels - 1) {
+					energyMode[i + conf->leds_per_level] = TORCH_SPARK_TEMP;
 				}
 				break;
 
 			case TORCH_SPARK_TEMP:
 				// just getting some energy from below
-				e2 = currentEnergy[i - LEDS_PER_LEVEL];
-				if (e2 < SPARK_TFR) {
+				e2 = currentEnergy[i - conf->leds_per_level];
+				if (e2 < conf->spark_tfr) {
 					// cell below is exhausted, becomes passive
-					energyMode[i - LEDS_PER_LEVEL] = TORCH_PASSIVE;
+					energyMode[i - conf->leds_per_level] = TORCH_PASSIVE;
 					// gobble up rest of energy
 					increase(&e, e2, 255);
 					// loose some overall energy
-					e = ((int)e * SPARK_CAP) >>8;
+					e = ((int)e * conf->spark_cap) >>8;
 					// this cell becomes active spark
 					energyMode[i] = TORCH_SPARK;
 				} else {
-					increase(&e, SPARK_TFR, 255);
+					increase(&e, conf->spark_tfr, 255);
 				}
 				break;
 			case TORCH_PASSIVE:
-				e = ((int)e * HEAT_CAP) >> 8;
-				increase(&e, ((((int)currentEnergy[i - 1] + (int)currentEnergy[i + 1]) * SIDE_RAD) >> 9) +
-				    (((int)currentEnergy[i - LEDS_PER_LEVEL] * UP_RAD) >> 8), 255);
+				e = ((int)e * conf->heat_cap) >> 8;
+				increase(&e, ((((int)currentEnergy[i - 1] + (int)currentEnergy[i + 1]) * conf->side_rad) >> 9) +
+				    (((int)currentEnergy[i - conf->leds_per_level] * conf->up_rad) >> 8), 255);
 
 			default:
 				break;
@@ -295,7 +332,7 @@ calcNextEnergy(void)
 }
 
 static void
-calcNextColours(void)
+calcNextColours(struct config_t *conf)
 {
 	int i, ei;
 	uint16_t e;
@@ -303,47 +340,47 @@ calcNextColours(void)
 	// XXX: add text overlay
 
 	for (i = 0; i < numleds; i++) {
-		if (UPSIDE_DOWN)
+		if (conf->upside_down)
 			ei = numleds - i;
 		else
 			ei = i;
 		e = nextEnergy[ei];
 		currentEnergy[ei] = e;
 		if (e > 250)
-			setColourDimmed(i, 170, 170, e, BRIGHTNESS); // blueish extra-bright spark
+			setColourDimmed(i, 170, 170, e, conf->brightness); // blueish extra-bright spark
 		else {
 			if (e > 0) {
 				// energy to brightness is non-linear
 				eb = energymap[e >> 3];
-				r = RED_BIAS;
-				g = GREEN_BIAS;
-				b = BLUE_BIAS;
-				increase(&r, (eb * RED_ENERGY) >> 8, 255);
-				increase(&g, (eb * GREEN_ENERGY) >> 8, 255);
-				increase(&b, (eb * BLUE_ENERGY) >> 8, 255);
-				setColourDimmed(i, r, g, b, BRIGHTNESS);
+				r = conf->red_bias;
+				g = conf->green_bias;
+				b = conf->blue_bias;
+				increase(&r, (eb * conf->red_energy) >> 8, 255);
+				increase(&g, (eb * conf->green_energy) >> 8, 255);
+				increase(&b, (eb * conf->blue_energy) >> 8, 255);
+				setColourDimmed(i, r, g, b, conf->brightness);
 			} else {
 				// background, no energy
-				setColourDimmed(i, RED_BG, GREEN_BG, BLUE_BG, BRIGHTNESS);
+				setColourDimmed(i, conf->red_bg, conf->green_bg, conf->blue_bg, conf->brightness);
 			}
 		}
 	}
 }
 
 static void
-injectRandom(void)
+injectRandom(struct config_t *conf)
 {
 	int i;
 
 	// random flame energy at bottom row
-	for (i = 0; i < LEDS_PER_LEVEL; i++) {
-		currentEnergy[i] = random16(FLAME_MIN, FLAME_MAX);
+	for (i = 0; i < conf->leds_per_level; i++) {
+		currentEnergy[i] = random16(conf->flame_min, conf->flame_max);
 		energyMode[i] = TORCH_NOP;
 	}
 	// random sparks at second row
-	for (i = LEDS_PER_LEVEL; i < 2 *LEDS_PER_LEVEL; i++) {
-		if (energyMode[i] != TORCH_SPARK && random16(100, 0) < RND_SPARK_PROB) {
-			currentEnergy[i] = random16(SPARK_MIN, SPARK_MAX);
+	for (i = conf->leds_per_level; i < 2 *conf->leds_per_level; i++) {
+		if (energyMode[i] != TORCH_SPARK && random16(100, 0) < conf->rnd_spark_prob) {
+			currentEnergy[i] = random16(conf->spark_min, conf->spark_max);
 			energyMode[i] = TORCH_SPARK;
 		}
 	}

@@ -39,6 +39,7 @@ main(int argc, char **argv)
 	struct sockaddr_in saddr;
 	struct addrinfo addrhint, *res, *res0;
 	uint8_t buf[4 + NLEDS * 3];
+	struct config_t conf;
 
 	if (argc != 2) {
 		usage(argv[0]);
@@ -114,7 +115,8 @@ main(int argc, char **argv)
 
 	fprintf(stderr, "Sent %d bytes\n", rtn);
 #else
-	if ((rtn = run_torch(sock)) != 0)
+	default_conf(&conf);
+	if ((rtn = run_torch(sock, &conf)) != 0)
 		fprintf(stderr, "Failed to start: %d\n", rtn);
 #endif
 	close(sock);
