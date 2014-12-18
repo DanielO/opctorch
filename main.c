@@ -26,14 +26,14 @@ usage(const char *argv0)
 	fprintf(stderr, "Generate message torch to OPC server:port\n");
 }
 
-#define NLEDS 10
+#define NLEDS (240 + 256)
 
 int
 main(int argc, char **argv)
 {
 	char *srvhost, *srvport;
 	const char *cause = NULL;
-	int sock, rtn, i;
+	int sock, rtn, i, n;
 	in_addr_t addr;
 	struct sockaddr_in saddr;
 	struct addrinfo addrhint, *res, *res0;
@@ -80,24 +80,30 @@ main(int argc, char **argv)
 	freeaddrinfo(res0);
 
 	memset(buf, 0, sizeof(buf));
+
 	i = 0;
 	buf[i++] = 0;			/* Channel (0 == all) */
 	buf[i++] = 0;			/* Command (0 = set LEDs) */
 	buf[i++] = (NLEDS * 3) >> 8;	/* Length of data to follow (MSB) */
 	buf[i++] = (NLEDS * 3) & 0xff;	/* Length of data to follow (LSB) */
+	for (n = 0; n < NLEDS; n++) {
+		if (n % 3 == 0) {
+			buf[i++] = 255;	/* Red */
+			buf[i++] = 0;	/* Green */
+			buf[i++] = 0;	/* Blue */
+		}
+		if (n % 3 == 1) {
+			buf[i++] = 0;	/* Red */
+			buf[i++] = 255;	/* Green */
+			buf[i++] = 0;	/* Blue */
+		}
 
-	buf[i++] = 255;			/* Red */
-	buf[i++] = 0;			/* Green */
-	buf[i++] = 0;			/* Blue */
-
-	buf[i++] = 0;			/* Red */
-	buf[i++] = 255;			/* Green */
-	buf[i++] = 0;			/* Blue */
-
-	buf[i++] = 0;			/* Red */
-	buf[i++] = 0;			/* Green */
-	buf[i++] = 255;			/* Blue */
-	
+		if (n % 3 == 2) {
+			buf[i++] = 0;	/* Red */
+			buf[i++] = 0;	/* Green */
+			buf[i++] = 255;	/* Blue */
+		}
+	}
 	if ((rtn = send(sock, buf, sizeof(buf), 0)) < 0)
 		err(EX_PROTOCOL, "Unable to send data");
 
