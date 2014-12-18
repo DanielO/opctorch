@@ -18,6 +18,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include "config.h"
+#include "torch.h"
+
 void
 usage(const char *argv0)
 {
@@ -25,8 +28,6 @@ usage(const char *argv0)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Generate message torch to OPC server:port\n");
 }
-
-#define NLEDS (240 + 256)
 
 int
 main(int argc, char **argv)
@@ -53,9 +54,13 @@ main(int argc, char **argv)
 
 	memset(&addrhint, 0, sizeof(addrhint));
 	addrhint.ai_family = PF_UNSPEC;
+#if 1
+	addrhint.ai_socktype = SOCK_STREAM;
+	addrhint.ai_protocol = IPPROTO_TCP;
+#else
 	addrhint.ai_socktype = SOCK_DGRAM;
 	addrhint.ai_protocol = IPPROTO_UDP;
-
+#endif
 	if ((rtn = getaddrinfo(srvhost, srvport, &addrhint, &res0)) != 0)
 		errx(EX_NOHOST, "Unable to resolve host: %s", gai_strerror(rtn));
 
@@ -78,7 +83,7 @@ main(int argc, char **argv)
 	if (sock < 0)
 		err(EX_NOHOST, "Unable to %s", cause);
 	freeaddrinfo(res0);
-
+#if 0
 	memset(buf, 0, sizeof(buf));
 
 	i = 0;
@@ -108,6 +113,9 @@ main(int argc, char **argv)
 		err(EX_PROTOCOL, "Unable to send data");
 
 	fprintf(stderr, "Sent %d bytes\n", rtn);
-
+#else
+	if ((rtn = run_torch(sock)) != 0)
+		fprintf(stderr, "Failed to start: %d\n", rtn);
+#endif
 	close(sock);
 }
