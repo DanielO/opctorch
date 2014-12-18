@@ -1,9 +1,11 @@
 /* Torch implementation */
 
 #include <err.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sysexits.h>
 #include <unistd.h>
 
@@ -53,8 +55,10 @@ static void	injectRandom(void);
 int
 run_torch(int s)
 {
-	int err = 0;
+	int err, sl, t, frame;
+	struct timeval then, now;
 
+	err = frame = 0;
 	sock = s;
 
 	numleds = LEDS_PER_LEVEL * TORCH_LEVELS;
@@ -85,14 +89,22 @@ run_torch(int s)
 	//resetText();
 
 	while (1) {
+		frame++;
+		gettimeofday(&then, NULL);
 		// XXX: text handling
 		injectRandom();
 		calcNextEnergy();
 		calcNextColours();
 
 		sendLEDs();
+			gettimeofday(&now, NULL);
+			timersub(&now, &then, &now);
+			t = now.tv_sec * 1000000 + now.tv_usec;
+			sl = (1000000 / UPDATE_RATE) - t;
+		if (frame % 10 == 0)
+			printf("%5d: Loop took %5d usec, sleeping %5d usec\n", frame, t, sl);
 
-		usleep(100000);
+		usleep(sl);
 	}
 
  out:

@@ -61,3 +61,5 @@
 #define BLUE_ENERGY 0
 
 #define UPSIDE_DOWN 0 // if set, flame (or rather: drop) animation is upside down. Text remains as-is
+
+#define UPDATE_RATE	30 // Frames per second
