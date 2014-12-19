@@ -1,6 +1,32 @@
-This is a C port of the Spark.IO Message Torch from https://community.spark.io/t/messagetorch-torch-fire-animation-with-ws2812-leds-message-display/2551
+Introduction
+========
+This is a C port of Lukas Zeller's [Spark.IO Message Torch](https://community.spark.io/t/messagetorch-torch-fire-animation-with-ws2812-leds-message-display/2551).
+It generates an [Open Pixel Controller](http://openpixelcontrol.org/) packet stream.
 
-It outputs to an Open Pixel Controller (http://openpixelcontrol.org/)
+Build
+====
+Has a BSD make file but can be trivially compiled with
+
+    cc *.c -o opctorch
+
+Example
+======
+* Clone and  build [Open Pixel Control](https://github.com/DanielO/openpixelcontrol) (my fork has a few minor bug fixes)
+* Create cylinder layout
+
+    python ./layouts/make_cylinder.py --n_around 11 --n_tall 21 --radius 0.2 --height 2 >layouts/cylinder_r0.2_h2_11x21.json
+
+* Run the GL server with
+
+    ./bin/gl_server layouts/cylinder_r0.2_h2_11x21.json
+
+* Run opctorch with
+
+    ./opctorch localhost:7890
+
+Hardware
+=======
+My setup uses a Beaglebone Black running [LEDscape](https://github.com/Yona-Appletree/LEDscape) to a 4m string of LEDs (60 LEDs/m)
 
 Copyright Lukas Zeller and Daniel O'Connor released under the MIT license.
 
