@@ -68,16 +68,16 @@ default_conf(struct config_t *conf)
 {
 
 	memset(conf, 0, sizeof(*conf));
-	conf->leds_per_level = 11;
-	conf->torch_levels = 21;
-	conf->wound_cwise = 1;
+	conf->leds_per_level = 26;
+	conf->torch_levels = 9;
+	conf->wound_cwise = 0;
 	conf->torch_chan = 1;
 	conf->brightness = 255;
 	conf->fade_base = 140;
 	conf->text_intensity = 255;
 	conf->text_cycles_per_px = 5;
 	conf->fade_per_repeat = 15;
-	conf->text_base_line = 10;
+	conf->text_base_line = 3;
 	conf->text_red = 0;
 	conf->text_green = 255;
 	conf->text_blue = 180;
