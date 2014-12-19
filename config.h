@@ -28,7 +28,7 @@ struct config_t {
 
 	/* Text parameters */
 	int text_intensity;
-	int txt_cycles_per_px;
+	int text_cycles_per_px;
 	int text_repeats;
 	int fade_per_repeat;
 	int text_base_line;
