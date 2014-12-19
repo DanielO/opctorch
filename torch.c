@@ -78,6 +78,9 @@ default_conf(struct config_t *conf)
 	conf->text_cycles_per_px = 5;
 	conf->fade_per_repeat = 15;
 	conf->text_base_line = 10;
+	conf->text_red = 0;
+	conf->text_green = 255;
+	conf->text_blue = 180;
 	conf->flame_min = 100;
 	conf->flame_max = 220;
 	conf->rnd_spark_prob = 2;
@@ -91,14 +94,14 @@ default_conf(struct config_t *conf)
 	conf->red_bg = 0;
 	conf->green_bg = 0;
 	conf->blue_bg = 0;
+	conf->red_bias = 10;
+	conf->green_bias = 0;
+	conf->blue_bias = 0;
 	conf->red_energy = 180;
 	conf->green_energy = 145;
 	conf->blue_energy = 0;
 	conf->upside_down = 0;
 	conf->update_rate = 30;
-	conf->text_red = 0;
-	conf->text_green = 255;
-	conf->text_blue = 180;
 }
 
 /* Run forever sending messages to socket */
