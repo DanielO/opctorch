@@ -70,7 +70,7 @@ default_conf(struct config_t *conf)
 	memset(conf, 0, sizeof(*conf));
 	conf->leds_per_level = 11;
 	conf->torch_levels = 21;
-	conf->wound_cwise = 0;
+	conf->wound_cwise = 1;
 	conf->torch_chan = 1;
 	conf->brightness = 255;
 	conf->fade_base = 140;
@@ -148,7 +148,7 @@ run_torch(int s, struct config_t *conf)
 
 	while (1) {
 		if (frame % 300 == 0) {
-			snprintf(tmp, sizeof(tmp) - 1, "Frame %d", frame);
+			snprintf(tmp, sizeof(tmp) - 1, "%d", frame);
 			tmp[sizeof(tmp) - 1] = 0;
 			newMessage(conf, tmp);
 		}
