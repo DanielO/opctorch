@@ -3,6 +3,12 @@ PROG=	opctorch
 SRCS=	main.c \
 	torch.c
 
+CINIPARSER= ${.CURDIR}/ccan/ciniparser
+.PATH:	${CINIPARSER}
+SRCS+=	dictionary.c \
+	ciniparser.c
+CFLAGS+=-I${.CURDIR}
+
 CFLAGS+=-g -Wall -Werror
 NO_MAN=
 

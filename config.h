@@ -2,6 +2,10 @@
 #define NLEDS 256
 
 struct config_t {
+	/* Hostname/IP and number/service name of OPC server */
+	char	*srvhost;
+	char	*srvport;
+
 	/* Number of LEDs around the tube. One too much looks better (italic text look)
 	 * than one to few (backwards leaning text look)
 	 * Higher number = diameter of the torch gets larger

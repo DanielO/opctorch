@@ -1,3 +1,5 @@
 main.o
 opctorch
 torch.o
+ciniparser.o
+dictionary.o

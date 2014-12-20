@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <sysexits.h>
 #include <unistd.h>
+#include <ccan/ciniparser/ciniparser.h>
 
 #include "config.h"
 #include "font.h"
@@ -68,19 +69,19 @@ default_conf(struct config_t *conf)
 {
 
 	memset(conf, 0, sizeof(*conf));
-	conf->leds_per_level = 26;
-	conf->torch_levels = 9;
-	conf->wound_cwise = 0;
-	conf->torch_chan = 1;
+	conf->leds_per_level = -1;
+	conf->torch_levels = -1;
+	conf->wound_cwise = -1;
+	conf->torch_chan = -1;
 	conf->brightness = 255;
 	conf->fade_base = 140;
-	conf->text_intensity = 255;
+	conf->text_intensity = 200;
 	conf->text_cycles_per_px = 5;
-	conf->fade_per_repeat = 15;
+	conf->fade_per_repeat = 50;
 	conf->text_base_line = 3;
-	conf->text_red = 0;
-	conf->text_green = 255;
-	conf->text_blue = 180;
+	conf->text_red = 255;
+	conf->text_green = 40;
+	conf->text_blue = 40;
 	conf->flame_min = 100;
 	conf->flame_max = 220;
 	conf->rnd_spark_prob = 2;
@@ -102,6 +103,94 @@ default_conf(struct config_t *conf)
 	conf->blue_energy = 0;
 	conf->upside_down = 0;
 	conf->update_rate = 30;
+}
+
+/* Update conf based on ini file */
+#define INI_GET_INT(name)	do {					\
+	    if ((i = ciniparser_getint(ini, "torch:" #name, -1)) != -1) \
+		    conf->name = i;					\
+	} while(0)
+#define INI_GET_INT8(name)	do {					\
+	    if ((i = ciniparser_getint(ini, "torch:" #name, -1)) != -1 && \
+		i >= 0 && i <= 255)					\
+		    conf->name = i;					\
+	} while(0)
+#define INI_GET_BOOL(name)	do {					\
+	    if ((i = ciniparser_getboolean(ini, "torch:" #name, -1)) != -1) \
+		    conf->name = i;					\
+	} while(0)
+int
+ini2conf(dictionary *ini, struct config_t *conf)
+{
+	int i;
+
+	/* Look for parameters */
+	INI_GET_INT(leds_per_level);
+	INI_GET_INT(torch_levels);
+	INI_GET_BOOL(wound_cwise);
+	INI_GET_INT(torch_chan);
+	INI_GET_INT8(brightness);
+	INI_GET_INT8(fade_base);
+	INI_GET_INT8(text_intensity);
+	INI_GET_INT8(text_cycles_per_px);
+	INI_GET_INT8(fade_per_repeat);
+	INI_GET_INT8(text_base_line);
+	INI_GET_INT8(text_red);
+	INI_GET_INT8(text_green);
+	INI_GET_INT8(text_blue);
+	INI_GET_INT8(flame_min);
+	INI_GET_INT8(flame_max);
+	INI_GET_INT8(rnd_spark_prob);
+	INI_GET_INT8(spark_min);
+	INI_GET_INT8(spark_max);
+	INI_GET_INT8(spark_tfr);
+	INI_GET_INT8(spark_cap);
+	INI_GET_INT8(up_rad);
+	INI_GET_INT8(side_rad);
+	INI_GET_INT8(heat_cap);
+	INI_GET_INT8(red_bg);
+	INI_GET_INT8(green_bg);
+	INI_GET_INT8(blue_bg);
+	INI_GET_INT8(red_bias);
+	INI_GET_INT8(green_bias);
+	INI_GET_INT8(blue_bias);
+	INI_GET_INT8(red_energy);
+	INI_GET_INT8(green_energy);
+	INI_GET_INT8(blue_energy);
+	INI_GET_BOOL(upside_down);
+	INI_GET_INT(update_rate);
+
+	/* Validate config */
+	if (conf->leds_per_level == -1) {
+		fprintf(stderr, "Must specify leds_per_level in configuration\n");
+		return(1);
+	}
+	if (conf->torch_levels == -1) {
+		fprintf(stderr, "Must specify torch_levels in configuration\n");
+		return(1);
+	}
+	if (conf->wound_cwise == -1) {
+		fprintf(stderr, "Must specify wound_cwise in configuration\n");
+		return(1);
+	}
+	if (conf->torch_chan == -1) {
+		fprintf(stderr, "Must specify torch_chan in configuration\n");
+		return(1);
+	}
+	if (conf->rnd_spark_prob < 0 || conf->rnd_spark_prob > 100){
+		fprintf(stderr, "rnd_spark_prob must be between 0 and 100\n");
+		return(1);
+	}
+	if (conf->update_rate <= 0) {
+		fprintf(stderr, "update_rate must be greater than 0\n");
+		return(1);
+	}
+	if (conf->text_base_line + ROWS_PER_GLYPH > conf->torch_levels) {
+		fprintf(stderr, "text_base_line is too high, text will be truncated\n");
+		return(1);
+	}
+
+	return 0;
 }
 
 /* Run forever sending messages to socket */

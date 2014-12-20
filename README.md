@@ -14,11 +14,11 @@ Example
 * Clone and  build [Open Pixel Control](https://github.com/DanielO/openpixelcontrol) (my fork has a few minor bug fixes)
 * Create cylinder layout
 
-    python ./layouts/make_cylinder.py --n_around 11 --n_tall 21 --radius 0.2 --height 2 >layouts/cylinder_r0.2_h2_11x21.json
+    python ./layouts/make_cylinder.py --n_around 11 --n_tall 22 --radius 0.2 --height 2 >layouts/cylinder_r0.2_h2_11x22.json
 
 * Run the GL server with
 
-    ./bin/gl_server layouts/cylinder_r0.2_h2_11x21.json
+    ./bin/gl_server layouts/cylinder_r0.2_h2_11x22.json
 
 * Run opctorch with
 
@@ -28,5 +28,9 @@ Hardware
 =======
 My setup uses a Beaglebone Black running [LEDscape](https://github.com/Yona-Appletree/LEDscape) to a 4m string of LEDs (60 LEDs/m)
 
-Copyright Lukas Zeller and Daniel O'Connor released under the MIT license.
+Copyright
+======
+Original implementation is copyright Lukas Zeller and this is a derivative work.
+INI parsing library is from [CCAN](http://git.ozlabs.org/?p=ccan;a=tree;f=ccan/ciniparser) and is released under the MIT license.
+
 

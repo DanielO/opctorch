@@ -14,9 +14,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sysexits.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <ccan/ciniparser/ciniparser.h>
 
 #include "config.h"
 #include "torch.h"
@@ -24,30 +26,69 @@
 void
 usage(const char *argv0)
 {
-	fprintf(stderr, "%s server:port\n", argv0);
+	fprintf(stderr, "%s [-s server:port] [-c config]\n", argv0);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Generate message torch to OPC server:port\n");
+
+	exit(EX_USAGE);
 }
 
 int
 main(int argc, char **argv)
 {
-	char *srvhost, *srvport;
-	const char *cause = NULL;
-	int sock, rtn;
+	char *server = NULL;
+	const char *argv0, *cause = NULL;
+	int sock, rtn, ch;
 	struct sockaddr_in saddr;
 	struct addrinfo addrhint, *res, *res0;
 	struct config_t conf;
+	dictionary *ini;
+	static struct option longopts[] = {
+		{ "config",	required_argument,	NULL, 	'c' },
+		{ "server",	required_argument,	NULL,	's' },
+		{ NULL,		0,			NULL,	0 }
+	};
 
-	if (argc != 2) {
-		usage(argv[0]);
-		exit(EX_USAGE);
+	argv0 = argv[0];
+
+	default_conf(&conf);
+
+	while ((ch = getopt_long(argc, argv, "c:s:", longopts, NULL)) != -1) {
+		switch (ch) {
+			case 'c':
+				if ((ini = ciniparser_load(optarg)) == NULL)
+					exit(EX_DATAERR);
+				if (ini2conf(ini, &conf) != 0)
+					exit(EX_DATAERR);
+				break;
+
+			case 's':
+				server = optarg;
+				break;
+
+			default:
+				usage(argv0);
+			}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (argc != 0)
+		usage(argv0);
+
+	/* Override the server host/port in config from the command line */
+	if (server != NULL) {
+		conf.srvport = strchr(server, ':');
+		conf.srvport[0] = '\0';
+		conf.srvport++;
+		conf.srvhost = server;
 	}
 
-	srvport = strchr(argv[1], ':');
-	srvport[0] = '\0';
-	srvport++;
-	srvhost = argv[1];
+	/* Check a server was specified somewhere */
+	if (conf.srvhost == NULL || conf.srvport == NULL) {
+		fprintf(stderr, "A server name and port must be specified in the configuration file or on the command line\n");
+		exit(EX_DATAERR);
+	}
 
 	saddr.sin_family = AF_INET;
 
@@ -60,7 +101,7 @@ main(int argc, char **argv)
 	addrhint.ai_socktype = SOCK_DGRAM;
 	addrhint.ai_protocol = IPPROTO_UDP;
 #endif
-	if ((rtn = getaddrinfo(srvhost, srvport, &addrhint, &res0)) != 0)
+	if ((rtn = getaddrinfo(conf.srvhost, conf.srvport, &addrhint, &res0)) != 0)
 		errx(EX_NOHOST, "Unable to resolve host: %s", gai_strerror(rtn));
 
 	sock = -1;
@@ -83,9 +124,9 @@ main(int argc, char **argv)
 		err(EX_NOHOST, "Unable to %s", cause);
 	freeaddrinfo(res0);
 
-	default_conf(&conf);
 	if ((rtn = run_torch(sock, &conf)) != 0)
 		fprintf(stderr, "Failed to start: %d\n", rtn);
 
+	ciniparser_freedict(ini);
 	close(sock);
 }
