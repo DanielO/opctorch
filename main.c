@@ -37,10 +37,6 @@ main(int argc, char **argv)
 	int sock, rtn;
 	struct sockaddr_in saddr;
 	struct addrinfo addrhint, *res, *res0;
-#if 0
-	int i;
-	uint8_t buf[4 + NLEDS * 3];
-#endif
 	struct config_t conf;
 
 	if (argc != 2) {
@@ -86,40 +82,10 @@ main(int argc, char **argv)
 	if (sock < 0)
 		err(EX_NOHOST, "Unable to %s", cause);
 	freeaddrinfo(res0);
-#if 0
-	memset(buf, 0, sizeof(buf));
 
-	i = 0;
-	buf[i++] = 0;			/* Channel (0 == all) */
-	buf[i++] = 0;			/* Command (0 = set LEDs) */
-	buf[i++] = (NLEDS * 3) >> 8;	/* Length of data to follow (MSB) */
-	buf[i++] = (NLEDS * 3) & 0xff;	/* Length of data to follow (LSB) */
-	for (n = 0; n < NLEDS; n++) {
-		if (n % 3 == 0) {
-			buf[i++] = 255;	/* Red */
-			buf[i++] = 0;	/* Green */
-			buf[i++] = 0;	/* Blue */
-		}
-		if (n % 3 == 1) {
-			buf[i++] = 0;	/* Red */
-			buf[i++] = 255;	/* Green */
-			buf[i++] = 0;	/* Blue */
-		}
-
-		if (n % 3 == 2) {
-			buf[i++] = 0;	/* Red */
-			buf[i++] = 0;	/* Green */
-			buf[i++] = 255;	/* Blue */
-		}
-	}
-	if ((rtn = send(sock, buf, sizeof(buf), 0)) < 0)
-		err(EX_PROTOCOL, "Unable to send data");
-
-	fprintf(stderr, "Sent %d bytes\n", rtn);
-#else
 	default_conf(&conf);
 	if ((rtn = run_torch(sock, &conf)) != 0)
 		fprintf(stderr, "Failed to start: %d\n", rtn);
-#endif
+
 	close(sock);
 }
