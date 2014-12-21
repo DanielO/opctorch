@@ -7,7 +7,7 @@ Build
 ====
 Has a BSD make file but can be trivially compiled with
 
-    cc *.c -o opctorch
+    cc *.c ccan/ciniparser/*.c -I . -o opctorch
 
 Example
 ======
