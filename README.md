@@ -27,6 +27,8 @@ Example
 Hardware
 =======
 My setup uses a Beaglebone Black running [LEDscape](https://github.com/Yona-Appletree/LEDscape) to a 4m string of LEDs (60 LEDs/m)
+I am using the 'original-ledscape' mapping so channel 0 is on pin
+P9 21.
 
 Copyright
 ======
