@@ -47,8 +47,8 @@ static int		opcconnect(const char *host, const char *port);
 static int		createlisten(int listenport, int *listensock4, int *listensock6);
 static char *		get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen);
 static struct clentry *	findsock(int fd, struct clientshead *head);
-static void		parseline(char *cmd, const char *from);
-static void		readfromsock(int fd, struct clientshead *head);
+static void		parseline(struct config_t *conf,char *cmd, const char *from);
+static void		readfromsock(struct config_t *conf, int fd, struct clientshead *head);
 static void		closesock(int fd, struct clientshead *head);
 
 void
@@ -207,10 +207,9 @@ findsock(int fd, struct clientshead *head)
 }
 
 static void
-parseline(char *cmd, const char *from)
+parseline(struct config_t *conf, char *cmd, const char *from)
 {
-	char *argv[10], *t;
-	int argc;
+	char *t;
 
 	t = strchr(cmd, '\n');
 	if (t != NULL)
@@ -219,25 +218,16 @@ parseline(char *cmd, const char *from)
 	if (t != NULL)
 		*t = '\0';
 
-	argv[0] = cmd;
-	for (argc = 1; argc < sizeof(argv) / sizeof(argv[0]); argc++) {
-		argv[argc] = strchr(argv[argc - 1], ' ');
-		if (argv[argc] == NULL)
-			break;
-		argv[argc][0] = '\0';
-		argv[argc]++;
-	}
-	fprintf(stderr, "Found %d words\n", argc);
-
-	if (!strcmp(argv[0], "quit"))
+	if (!strcmp(cmd, "quit")) {
 		doquit = 1;
-	else
-		cmd_torch(from, argc, argv);
+		return;
+	}
+	cmd_torch(conf, from, cmd);
 }
 
 /* Add data to buffer for given fd */
 static void
-readfromsock(int fd, struct clientshead *head)
+readfromsock(struct config_t *conf, int fd, struct clientshead *head)
 {
 	struct clentry *clp;
 	int amt, r;
@@ -257,7 +247,7 @@ readfromsock(int fd, struct clientshead *head)
 		return;
 	}
 	if (strchr(clp->buf, '\n') != NULL) {
-		parseline(clp->buf, clp->addrtxt);
+		parseline(conf, clp->buf, clp->addrtxt);
 		closesock(fd, head);
 	}
 }
@@ -433,7 +423,7 @@ main(int argc, char **argv)
 			} else {
 				/* See if our clients have anything to say */
 				if (fds[i].revents & POLLRDNORM) {
-					readfromsock(fds[i].fd, &clients);
+					readfromsock(&conf, fds[i].fd, &clients);
 				}
 				if (fds[i].revents & (POLLERR | POLLHUP)) {
 					closesock(fds[i].fd, &clients);

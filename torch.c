@@ -240,17 +240,11 @@ run_torch(struct config_t *conf)
 {
 	int sl, t, frame;
 	struct timeval then, now;
-	char tmp[100];
 
 	frame = 0;
 	while (1) {
 		assert(pthread_mutex_lock(&torch_mtx) == 0);
 		
-		if (frame % 300 == 0) {
-			snprintf(tmp, sizeof(tmp) - 1, "%d", frame);
-			tmp[sizeof(tmp) - 1] = 0;
-			newMessage(conf, tmp);
-		}
 		frame++;
 		gettimeofday(&then, NULL);
 		renderText(conf);
@@ -312,13 +306,48 @@ setColourDimmed(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue, uint8
 }
 
 void
-cmd_torch(const char *from, int argc, char **argv)
+splitargs(char *cmd, char **argv, int nargv, int *argc)
+{
+
+	assert(nargv > 0);
+
+	argv[0] = cmd;
+	for (*argc = 1; *argc < nargv; (*argc)++) {
+		argv[*argc] = strchr(argv[*argc - 1], ' ');
+		if (argv[*argc] == NULL)
+			break;
+		argv[*argc][0] = '\0';
+		argv[*argc]++;
+	}
+}
+
+void
+cmd_torch(struct config_t *conf, const char *from, char *cmd)
 {	
+	char *argv[10], *origline, *tmp;
+	int argc;
+
+	origline = strdup(cmd);
+	splitargs(cmd, argv, sizeof(argv) / sizeof(argv[0]), &argc);
+	
+	fprintf(stderr, "Found %d words\n", argc);
 
 	assert(pthread_mutex_lock(&torch_mtx) == 0);
 
 	fprintf(stderr, "Command from %s: %s\n", from, argv[0]);
+	if (!strcmp(argv[0], "message")) {
+		if (argc < 2) {
+			warnx("message: bad usage");
+			goto out;
+		}
+		tmp = strchr(origline, ' ');
+		tmp++;
+		fprintf(stderr, "Message: %s\n", tmp);
+		newMessage(conf, tmp);
+	}
 
+  out:
+	free(origline);
 	assert(pthread_mutex_unlock(&torch_mtx) == 0);
 }
 
