@@ -1,6 +1,8 @@
 /* Torch implementation */
 
+#include <assert.h>
 #include <err.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -45,8 +47,10 @@ static int textPixelOffset;
 static int textCycleCount;
 static int repeatCount;
 
+static pthread_mutex_t torch_mtx = PTHREAD_MUTEX_INITIALIZER;
+
 static void	setColourDimmed(uint16_t, uint8_t, uint8_t, uint8_t, uint8_t);
-static void	sendLEDs(void);
+static int	sendLEDs(void);
 static uint16_t	random16(uint16_t, uint16_t);
 static void	sat8sub(uint8_t *, uint8_t);
 static void	sat8add(uint8_t *, uint8_t);
@@ -193,40 +197,29 @@ ini2conf(dictionary *ini, struct config_t *conf)
 	return 0;
 }
 
-/* Run forever sending messages to socket */
+/* Allocate memory and setup ready to run */
 int
-run_torch(int s, struct config_t *conf)
+create_torch(int s, struct config_t *conf)
 {
-	int err, sl, t, frame;
-	struct timeval then, now;
-	char tmp[100];
 
-	err = frame = 0;
 	sock = s;
 
 	numleds = conf->leds_per_level * conf->torch_levels;
+	assert(numleds > 0);
 	pixDataSz = sizeof(*pixData) + numleds * sizeof(pixData->pixels[0]);
-	if ((pixData = malloc(pixDataSz)) == NULL) {
-		err = -1;
-		goto out;
-	}
-	if ((currentEnergy = malloc(numleds * sizeof(currentEnergy[0]))) == NULL) {
-		err = -1;
-		goto out;
-	}
-	if ((nextEnergy = malloc(numleds * sizeof(nextEnergy[0]))) == NULL) {
-		err = -1;
-		goto out;
-	}
-	if ((energyMode = malloc(numleds * sizeof(energyMode[0]))) == NULL) {
-		err = -1;
-		goto out;
-	}
+	if ((pixData = malloc(pixDataSz)) == NULL)
+		goto err;
+	if ((currentEnergy = malloc(numleds * sizeof(currentEnergy[0]))) == NULL)
+		goto err;
+	if ((nextEnergy = malloc(numleds * sizeof(nextEnergy[0]))) == NULL)
+		goto err;
+	if ((energyMode = malloc(numleds * sizeof(energyMode[0]))) == NULL)
+		goto err;
 	textPixels = conf->leds_per_level * ROWS_PER_GLYPH;
-	if ((textLayer = malloc(textPixelOffset * sizeof(textLayer[0]))) == NULL) {
-		err = -1;
-		goto out;
-	}
+	assert(textPixels > 0);
+	if ((textLayer = malloc(textPixelOffset * sizeof(textLayer[0]))) == NULL)
+		goto err;
+
 	pixData->header[0] = conf->torch_chan;
 	pixData->header[1] = 0; // Command: set LEDs
 	pixData->header[2] = (numleds * sizeof(pixData->pixels[0])) >> 8; // Length MSB
@@ -235,7 +228,24 @@ run_torch(int s, struct config_t *conf)
 	resetEnergy();
 	resetText();
 
+	return(0);
+
+ err:
+	free_torch();
+	return(-1);
+}
+
+int
+run_torch(struct config_t *conf)
+{
+	int sl, t, frame;
+	struct timeval then, now;
+	char tmp[100];
+
+	frame = 0;
 	while (1) {
+		assert(pthread_mutex_lock(&torch_mtx) == 0);
+		
 		if (frame % 300 == 0) {
 			snprintf(tmp, sizeof(tmp) - 1, "%d", frame);
 			tmp[sizeof(tmp) - 1] = 0;
@@ -248,18 +258,26 @@ run_torch(int s, struct config_t *conf)
 		calcNextEnergy(conf);
 		calcNextColours(conf);
 
-		sendLEDs();
+		if (sendLEDs() != 0)
+			return(-1);
+
 		gettimeofday(&now, NULL);
 		timersub(&now, &then, &now);
 		t = now.tv_sec * 1000000 + now.tv_usec;
 		sl = (1000000 / conf->update_rate) - t;
 		if (frame % 10 == 0)
 			printf("%5d: Loop took %5d usec, sleeping %5d usec\n", frame, t, sl);
-
+		assert(pthread_mutex_unlock(&torch_mtx) == 0);
+		
 		usleep(sl);
 	}
 
- out:
+	return(0);
+}
+
+void
+free_torch(void)
+{
 	if (pixData != NULL) {
 		free(pixData);
 		pixData = NULL;
@@ -280,7 +298,6 @@ run_torch(int s, struct config_t *conf)
 		free(textLayer);
 		textLayer = NULL;
 	}
-	return(err);
 }
 
 static void
@@ -294,13 +311,28 @@ setColourDimmed(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue, uint8
 	pixData->pixels[lednum].blue = (blue * bright) >> 8;
 }
 
-static void
+void
+cmd_torch(const char *from, int argc, char **argv)
+{	
+
+	assert(pthread_mutex_lock(&torch_mtx) == 0);
+
+	fprintf(stderr, "Command from %s: %s\n", from, argv[0]);
+
+	assert(pthread_mutex_unlock(&torch_mtx) == 0);
+}
+
+static int
 sendLEDs(void)
 {
 	int rtn;
 
-	if ((rtn = send(sock, pixData, pixDataSz, 0)) < 0)
-		err(EX_PROTOCOL, "Unable to send data");
+	if ((rtn = send(sock, pixData, pixDataSz, 0)) < 0) {
+		warn("Unable to send data");
+		return(-1);
+	}
+
+	return(0);
 }
 
 static uint16_t
@@ -315,7 +347,7 @@ random16(uint16_t aMinOrMax, uint16_t aMax)
 	r = aMinOrMax;
 	aMax = aMax - aMinOrMax + 1;
 	r += rand() % aMax;
-	return r;
+	return(r);
 }
 
 static void

@@ -9,7 +9,8 @@ SRCS+=	dictionary.c \
 	ciniparser.c
 CFLAGS+=-I${.CURDIR}
 
-CFLAGS+=-g -Wall -Werror
+CFLAGS+=-g -Wall -Werror -O0
+LDFLAGS+=-lpthread
 NO_MAN=
 
 .include <bsd.prog.mk>
