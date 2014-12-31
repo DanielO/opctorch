@@ -542,7 +542,8 @@ injectRandom(struct config_t *conf)
 void
 newMessage(struct config_t *conf, char *msg)
 {
-	strlcpy(text, msg, sizeof(text));
+	msg[sizeof(text) - 1] = '\0';
+	strcpy(text, msg, sizeof(text) - 1);
 	textLen = strlen(text);
 	textPixelOffset = -conf->leds_per_level;
 	textCycleCount = 0;
