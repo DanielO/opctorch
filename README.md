@@ -9,6 +9,11 @@ Has a BSD make file but can be trivially compiled with
 
     cc *.c ccan/ciniparser/*.c -I . -o opctorch
 
+or
+
+    sudo apt-get install pmake
+    pmake -f BSDmakefile
+
 Example
 ======
 * Clone and  build [Open Pixel Control](https://github.com/DanielO/openpixelcontrol) (my fork has a few minor bug fixes)
