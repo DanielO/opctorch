@@ -543,7 +543,7 @@ void
 newMessage(struct config_t *conf, char *msg)
 {
 	msg[sizeof(text) - 1] = '\0';
-	strcpy(text, msg, sizeof(text) - 1);
+	strncpy(text, msg, sizeof(text) - 1);
 	textLen = strlen(text);
 	textPixelOffset = -conf->leds_per_level;
 	textCycleCount = 0;
