@@ -162,8 +162,13 @@ createlisten(int listenport, int *listensock4, int *listensock6)
 		return(-1);
 	}
 	if (listen(*listensock6, 5) < 0) {
-		warn("Unable to listen to IPv6 socket");
-		return(-1);
+		/* If the system is set to bind v6 addresses when you bind v4 so just ignore the error */
+		if (errno != EADDRINUSE) {
+			warn("Unable to listen to IPv6 socket");
+			return(-1);
+		}
+		close(*listensock6);
+		*listensock6 = -1;
 	}
 
 	return(0);
@@ -376,9 +381,12 @@ main(int argc, char **argv)
 		fds[j].fd = listensock4;
 		fds[j].events = POLLRDNORM;
 		fds[j++].revents = 0;
-		fds[j].fd = listensock6;
-		fds[j].events = POLLRDNORM;
-		fds[j++].revents = 0;
+		if (listensock6 != -1) {
+			fds[j].fd = listensock6;
+			fds[j].events = POLLRDNORM;
+			fds[j++].revents = 0;
+		}
+		
 		SLIST_FOREACH(clp, &clients, entries) {
 			fds[j].fd = clp->fd;
 			fds[j].events = POLLRDNORM;
