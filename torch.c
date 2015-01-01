@@ -62,6 +62,7 @@ static void	injectRandom(struct config_t *);
 static void	renderText(struct config_t *);
 static void	crossFade(struct config_t *, uint8_t, uint8_t, uint8_t *, uint8_t *);
 static void	setVal(struct config_t *conf, const char *, const char *);
+static void	dumpVals(struct config_t *conf);
 
 #define TORCH_PASSIVE		0 // Just environment, glow from nearby radiation
 #define TORCH_NOP		1 // No processing
@@ -347,6 +348,8 @@ cmd_torch(struct config_t *conf, const char *from, char *cmd)
 			setVal(conf, argv[1], argv[2]);
 		else
 			warnx("Bad usage for set command");
+	} else if (!strcmp(argv[0], "dump")) {
+		dumpVals(conf);
 	}
 
   out:
@@ -727,3 +730,43 @@ setVal(struct config_t *conf, const char *key, const char *val)
 		warnx("Unknown key %s", key);
 }
 
+static void
+dumpVals(struct config_t *conf)
+{
+
+	fprintf(stderr, "=============\n");
+	fprintf(stderr, "Configuration\n");
+	fprintf(stderr, "=============\n");
+	fprintf(stderr, "%-20s: %d\n", "brightness", conf->brightness);
+	fprintf(stderr, "%-20s: %d\n", "fade_base", conf->fade_base);
+	fprintf(stderr, "%-20s: %d\n", "text_intensity", conf->text_intensity);
+	fprintf(stderr, "%-20s: %d\n", "text_cycles_per_px", conf->text_cycles_per_px);
+	fprintf(stderr, "%-20s: %d\n", "text_repeats", conf->text_repeats);
+	fprintf(stderr, "%-20s: %d\n", "fade_per_repeat", conf->fade_per_repeat);
+	fprintf(stderr, "%-20s: %d\n", "text_base_line", conf->text_base_line);
+	fprintf(stderr, "%-20s: %d\n", "text_red", conf->text_red);
+	fprintf(stderr, "%-20s: %d\n", "text_green", conf->text_green);
+	fprintf(stderr, "%-20s: %d\n", "text_blue", conf->text_blue);
+	fprintf(stderr, "%-20s: %d\n", "flame_min", conf->flame_min);
+	fprintf(stderr, "%-20s: %d\n", "flame_max", conf->flame_max);
+	fprintf(stderr, "%-20s: %d\n", "rnd_spark_prob", conf->rnd_spark_prob);
+	fprintf(stderr, "%-20s: %d\n", "spark_min", conf->spark_min);
+	fprintf(stderr, "%-20s: %d\n", "spark_max", conf->spark_max);
+	fprintf(stderr, "%-20s: %d\n", "spark_tfr", conf->spark_tfr);
+	fprintf(stderr, "%-20s: %d\n", "spark_cap", conf->spark_cap);
+	fprintf(stderr, "%-20s: %d\n", "up_rad", conf->up_rad);
+	fprintf(stderr, "%-20s: %d\n", "side_rad", conf->side_rad);
+	fprintf(stderr, "%-20s: %d\n", "heat_cap", conf->heat_cap);
+	fprintf(stderr, "%-20s: %d\n", "red_bg", conf->red_bg);
+	fprintf(stderr, "%-20s: %d\n", "green_bg", conf->green_bg);
+	fprintf(stderr, "%-20s: %d\n", "blue_bg", conf->blue_bg);
+	fprintf(stderr, "%-20s: %d\n", "red_bias", conf->red_bias);
+	fprintf(stderr, "%-20s: %d\n", "green_bias", conf->green_bias);
+	fprintf(stderr, "%-20s: %d\n", "blue_bias", conf->blue_bias);
+	fprintf(stderr, "%-20s: %d\n", "red_energy", conf->red_energy);
+	fprintf(stderr, "%-20s: %d\n", "green_energy", conf->green_energy);
+	fprintf(stderr, "%-20s: %d\n", "blue_energy", conf->blue_energy);
+	fprintf(stderr, "%-20s: %d\n", "upside_down", conf->upside_down);
+	fprintf(stderr, "%-20s: %d\n", "update_rate", conf->update_rate);
+	fprintf(stderr, "\n");
+}
