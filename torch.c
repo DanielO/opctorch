@@ -217,7 +217,7 @@ create_torch(int s, struct config_t *conf)
 		goto err;
 	textPixels = conf->leds_per_level * ROWS_PER_GLYPH;
 	assert(textPixels > 0);
-	if ((textLayer = malloc(textPixelOffset * sizeof(textLayer[0]))) == NULL)
+	if ((textLayer = malloc(textPixels * sizeof(textLayer[0]))) == NULL)
 		goto err;
 
 	pixData->header[0] = conf->torch_chan;
