@@ -61,6 +61,7 @@ static void	calcNextColours(struct config_t *);
 static void	injectRandom(struct config_t *);
 static void	renderText(struct config_t *);
 static void	crossFade(struct config_t *, uint8_t, uint8_t, uint8_t *, uint8_t *);
+static void	setVal(struct config_t *conf, const char *, const char *);
 
 #define TORCH_PASSIVE		0 // Just environment, glow from nearby radiation
 #define TORCH_NOP		1 // No processing
@@ -330,8 +331,6 @@ cmd_torch(struct config_t *conf, const char *from, char *cmd)
 	origline = strdup(cmd);
 	splitargs(cmd, argv, sizeof(argv) / sizeof(argv[0]), &argc);
 	
-	fprintf(stderr, "Found %d words\n", argc);
-
 	assert(pthread_mutex_lock(&torch_mtx) == 0);
 
 	fprintf(stderr, "Command from %s: %s\n", from, argv[0]);
@@ -342,8 +341,12 @@ cmd_torch(struct config_t *conf, const char *from, char *cmd)
 		}
 		tmp = strchr(origline, ' ');
 		tmp++;
-		fprintf(stderr, "Message: %s\n", tmp);
 		newMessage(conf, tmp);
+	} else if (!strcmp(argv[0], "set")) {
+		if (argc == 3)
+			setVal(conf, argv[1], argv[2]);
+		else
+			warnx("Bad usage for set command");
 	}
 
   out:
@@ -650,3 +653,77 @@ renderText(struct config_t *conf)
 		}
 	}
 }
+
+static void
+setVal(struct config_t *conf, const char *key, const char *val)
+{
+	int tmp;
+
+	tmp = atoi(val);
+	
+	if (!strcmp(key, "brightness"))
+		conf->brightness = tmp;
+	else if (!strcmp(key, "fade_base"))
+		conf->fade_base = tmp;
+	else if (!strcmp(key, "text_intensity"))
+		conf->text_intensity = tmp;
+	else if (!strcmp(key, "text_cycles_per_px"))
+		conf->text_cycles_per_px = tmp;
+	else if (!strcmp(key, "text_repeats"))
+		conf->text_repeats = tmp;
+	else if (!strcmp(key, "fade_per_repeat"))
+		conf->fade_per_repeat = tmp;
+	else if (!strcmp(key, "text_base_line"))
+		conf->text_base_line = tmp;
+	else if (!strcmp(key, "text_red"))
+		conf->text_red = tmp;
+	else if (!strcmp(key, "text_green"))
+		conf->text_green = tmp;
+	else if (!strcmp(key, "text_blue"))
+		conf->text_blue = tmp;
+	else if (!strcmp(key, "flame_min"))
+		conf->flame_min = tmp;
+	else if (!strcmp(key, "flame_max"))
+		conf->flame_max = tmp;
+	else if (!strcmp(key, "rnd_spark_prob"))
+		conf->rnd_spark_prob = tmp;
+	else if (!strcmp(key, "spark_min"))
+		conf->spark_min = tmp;
+	else if (!strcmp(key, "spark_max"))
+		conf->spark_max = tmp;
+	else if (!strcmp(key, "spark_tfr"))
+		conf->spark_tfr = tmp;
+	else if (!strcmp(key, "spark_cap"))
+		conf->spark_cap = tmp;
+	else if (!strcmp(key, "up_rad"))
+		conf->up_rad = tmp;
+	else if (!strcmp(key, "side_rad"))
+		conf->side_rad = tmp;
+	else if (!strcmp(key, "heat_cap"))
+		conf->heat_cap = tmp;
+	else if (!strcmp(key, "red_bg"))
+		conf->red_bg = tmp;
+	else if (!strcmp(key, "green_bg"))
+		conf->green_bg = tmp;
+	else if (!strcmp(key, "blue_bg"))
+		conf->blue_bg = tmp;
+	else if (!strcmp(key, "red_bias"))
+		conf->red_bias = tmp;
+	else if (!strcmp(key, "green_bias"))
+		conf->green_bias = tmp;
+	else if (!strcmp(key, "blue_bias"))
+		conf->blue_bias = tmp;
+	else if (!strcmp(key, "red_energy"))
+		conf->red_energy = tmp;
+	else if (!strcmp(key, "green_energy"))
+		conf->green_energy = tmp;
+	else if (!strcmp(key, "blue_energy"))
+		conf->blue_energy = tmp;
+	else if (!strcmp(key, "upside_down"))
+		conf->upside_down = tmp;
+	else if (!strcmp(key, "update_rate"))
+		conf->update_rate = tmp;
+	else
+		warnx("Unknown key %s", key);
+}
+
