@@ -265,7 +265,7 @@ closesock(int fd, struct clientshead *head)
 	clp = findsock(fd, head);
 	if (clp == NULL)
 		return;
-	
+
 	SLIST_REMOVE(head, clp, clentry, entries);
 	close(clp->fd);
 	warnx("Closed connection from %s", clp->addrtxt);
@@ -375,23 +375,30 @@ main(int argc, char **argv)
 	doquit = 0;
 	while (!doquit) {
 		int numfds;
-		numfds = numclients + 2;
+		numfds = numclients;
+		if (listensock4 != -1)
+			numfds++;
+		if (listensock6 != -1)
+			numfds++;
 		fds = realloc(fds, sizeof(fds[0]) * numfds);
 		j = 0;
-		fds[j].fd = listensock4;
-		fds[j].events = POLLRDNORM;
-		fds[j++].revents = 0;
+		if (listensock4 != -1) {
+			fds[j].fd = listensock4;
+			fds[j].events = POLLRDNORM;
+			fds[j++].revents = 0;
+		}
 		if (listensock6 != -1) {
 			fds[j].fd = listensock6;
 			fds[j].events = POLLRDNORM;
 			fds[j++].revents = 0;
 		}
-		
+
 		SLIST_FOREACH(clp, &clients, entries) {
 			fds[j].fd = clp->fd;
 			fds[j].events = POLLRDNORM;
 			fds[j++].revents = 0;
 		}
+		assert(numfds == j);
 		if (poll(fds, j, -1) == -1) {
 			if (errno == EINTR)
 				continue;
