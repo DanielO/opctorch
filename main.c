@@ -48,8 +48,8 @@ static int		createlisten(int listenport, int *listensock4, int *listensock6);
 static char *		get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen);
 static struct clentry *	findsock(int fd, struct clientshead *head);
 static void		parseline(struct config_t *conf,char *cmd, const char *from);
-static void		readfromsock(struct config_t *conf, int fd, struct clientshead *head);
-static void		closesock(int fd, struct clientshead *head);
+static void		readfromsock(struct config_t *conf, int fd, struct clientshead *head, int *numclients);
+static void		closesock(int fd, struct clientshead *head, int *numclients);
 
 void
 usage(const char *argv0)
@@ -232,7 +232,7 @@ parseline(struct config_t *conf, char *cmd, const char *from)
 
 /* Add data to buffer for given fd */
 static void
-readfromsock(struct config_t *conf, int fd, struct clientshead *head)
+readfromsock(struct config_t *conf, int fd, struct clientshead *head, int *numclients)
 {
 	struct clentry *clp;
 	int amt, r;
@@ -242,23 +242,23 @@ readfromsock(struct config_t *conf, int fd, struct clientshead *head)
 	amt = sizeof(clp->buf) - 1 - clp->amt;
 	if ((r = read(fd, clp->buf + clp->amt, amt)) == -1) {
 		warn("Unable to read from %s", clp->addrtxt);
-		closesock(fd, head);
+		closesock(fd, head, numclients);
 		return;
 	}
 	clp->amt += r;
 	if (clp->amt == sizeof(clp->buf) - 1) {
 		warnx("Line too long");
-		closesock(fd, head);
+		closesock(fd, head, numclients);
 		return;
 	}
 	if (strchr(clp->buf, '\n') != NULL) {
 		parseline(conf, clp->buf, clp->addrtxt);
-		closesock(fd, head);
+		closesock(fd, head, numclients);
 	}
 }
 
 static void
-closesock(int fd, struct clientshead *head)
+closesock(int fd, struct clientshead *head, int *numclients)
 {
 	struct clentry *clp;
 
@@ -268,6 +268,7 @@ closesock(int fd, struct clientshead *head)
 
 	SLIST_REMOVE(head, clp, clentry, entries);
 	close(clp->fd);
+	(*numclients)--;
 	warnx("Closed connection from %s", clp->addrtxt);
 
 	free(clp);
@@ -438,10 +439,10 @@ main(int argc, char **argv)
 			} else {
 				/* See if our clients have anything to say */
 				if (fds[i].revents & POLLRDNORM) {
-					readfromsock(&conf, fds[i].fd, &clients);
+					readfromsock(&conf, fds[i].fd, &clients, &numclients);
 				}
 				if (fds[i].revents & (POLLERR | POLLHUP)) {
-					closesock(fds[i].fd, &clients);
+					closesock(fds[i].fd, &clients, &numclients);
 				}
 			}
 		}
