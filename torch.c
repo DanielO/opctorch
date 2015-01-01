@@ -244,7 +244,7 @@ run_torch(struct config_t *conf)
 	frame = 0;
 	while (1) {
 		assert(pthread_mutex_lock(&torch_mtx) == 0);
-		
+
 		frame++;
 		gettimeofday(&then, NULL);
 		renderText(conf);
@@ -262,7 +262,7 @@ run_torch(struct config_t *conf)
 		if (frame % 10 == 0)
 			printf("%5d: Loop took %5d usec, sleeping %5d usec\n", frame, t, sl);
 		assert(pthread_mutex_unlock(&torch_mtx) == 0);
-		
+
 		usleep(sl);
 	}
 
