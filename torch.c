@@ -430,7 +430,7 @@ static void
 calcNextEnergy(struct config_t *conf)
 {
 	int x, y, i;
-	uint8_t e, m, e2;
+	uint8_t e, m, e2, tmp;
 
 	i = 0;
 	for (y = 0; y < conf->torch_levels; y++) {
@@ -465,7 +465,11 @@ calcNextEnergy(struct config_t *conf)
 				break;
 			case TORCH_PASSIVE:
 				e = ((int)e * conf->heat_cap) >> 8;
-				sat8add(&e, ((((int)currentEnergy[i - 1] + (int)currentEnergy[i + 1]) * conf->side_rad) >> 9) +
+				if (i < numleds - 1)
+					tmp = currentEnergy[i + 1];
+				else
+					tmp = 0;
+				sat8add(&e, ((((int)currentEnergy[i - 1] + (int)tmp) * conf->side_rad) >> 9) +
 				    (((int)currentEnergy[i - conf->leds_per_level] * conf->up_rad) >> 8));
 
 			default:
