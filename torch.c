@@ -336,13 +336,13 @@ cmd_torch(struct config_t *conf, const char *from, char *cmd)
 
 	fprintf(stderr, "Command from %s: %s\n", from, argv[0]);
 	if (!strcmp(argv[0], "message")) {
-		if (argc < 2) {
-			warnx("message: bad usage");
-			goto out;
+		if (argc == 1) {
+			newMessage(conf, "");
+		} else {
+			tmp = strchr(origline, ' ');
+			tmp++;
+			newMessage(conf, tmp);
 		}
-		tmp = strchr(origline, ' ');
-		tmp++;
-		newMessage(conf, tmp);
 	} else if (!strcmp(argv[0], "set")) {
 		if (argc == 3)
 			setVal(conf, argv[1], argv[2]);
@@ -352,7 +352,6 @@ cmd_torch(struct config_t *conf, const char *from, char *cmd)
 		dumpVals(conf);
 	}
 
-  out:
 	free(origline);
 	assert(pthread_mutex_unlock(&torch_mtx) == 0);
 }
@@ -552,7 +551,6 @@ injectRandom(struct config_t *conf)
 void
 newMessage(struct config_t *conf, char *msg)
 {
-	msg[sizeof(text) - 1] = '\0';
 	strncpy(text, msg, sizeof(text) - 1);
 	textLen = strlen(text);
 	textPixelOffset = -conf->leds_per_level;
