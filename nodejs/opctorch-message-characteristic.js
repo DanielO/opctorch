@@ -6,7 +6,7 @@ var BlenoDescriptor = bleno.Descriptor;
 
 function OPCTorchMessageCharacteristic(opctorch) {
   OPCTorchMessageCharacteristic.super_.call(this, {
-    uuid: '01010101010101010101010101524744',
+    uuid: '69b9ac8b-2f23-471a-ba62-0e3c9e8c0002',
     properties: ['write', 'writeWithoutResponse'],
     descriptors: [
       new BlenoDescriptor({

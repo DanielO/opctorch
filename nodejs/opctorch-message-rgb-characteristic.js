@@ -30,7 +30,7 @@ OPCTorchMessageRGBCharacteristic.prototype.onWriteRequest = function(data, offse
     var r = data.readUInt8(0);
     var g = data.readUInt8(1);
     var b = data.readUInt8(2);
-    console.log("RGB characteristic " + r + " " + g + " " + b);
+    console.log("Message RGB characteristic " + r + " " + g + " " + b);
     this.opctorch.set("text_red", r);
     this.opctorch.set("text_green", g);
     this.opctorch.set("text_blue", b);

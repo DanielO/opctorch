@@ -4,7 +4,7 @@ var DeviceInformationService = require('./device-information-service');
 var OPCTorchService = require('./opctorch-service');
 
 var OPCTorch = require('./opctorch');
-var opctorch = new OPCTorch();
+var opctorch = new OPCTorch(1234);
 
 var deviceInformationService = new DeviceInformationService(opctorch);
 var opcTorchService = new OPCTorchService(opctorch);
