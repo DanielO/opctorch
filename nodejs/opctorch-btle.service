@@ -1,0 +1,12 @@
+[Unit]
+Description=OPCTorch BTLE
+Requires=opctorch.service
+After=opctorch.target
+
+[Service]
+WorkingDirectory=/home/debian/opctorch/nodejs
+ExecStart=/home/debian/opctorch/nodejs/run-opctorch-btle
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target
