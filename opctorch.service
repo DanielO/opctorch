@@ -1,0 +1,12 @@
+[Unit]
+Description=OPCTorch sender
+Requires=ledscape.service
+After=ledscape.target
+
+[Service]
+WorkingDirectory=/home/debian/opctorch
+ExecStart=/home/debian/opctorch/run-opctorch
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target

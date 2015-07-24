@@ -1,0 +1,9 @@
+#!/bin/sh
+
+logger "run-opctorch called"
+date >/tmp/opc.log
+ps axwww >>/tmp/opc.log
+sleep 2
+logger "Starting"
+/home/debian/opctorch/opctorch -c /home/debian/opctorch/conf.ini -s localhost:7890 -l 1234
+
