@@ -97,6 +97,7 @@ opcconnect(const char *host, const char *port)
 		err(EX_NOHOST, "Unable to resolve host: %s", gai_strerror(rtn));
 
 	opcsock = -1;
+	cause = "";
 	for (res = res0; res; res = res->ai_next) {
 		opcsock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		if (opcsock < 0) {
@@ -299,6 +300,7 @@ main(int argc, char **argv)
 	rtn = 0;
 	listenport = listensock4 = listensock6 = -1;
 	argv0 = argv[0];
+	ini = NULL;
 
 	default_conf(&conf);
 
@@ -454,7 +456,7 @@ main(int argc, char **argv)
 	fprintf(stderr, "before\n");
 	pthread_kill(torchthr, SIGTERM);
 	fprintf(stderr, "after\n");
-	
+
   wait:
 	pthread_join(torchthr, &thrrtn);
 	fprintf(stderr, "Torch thread returned %p\n", thrrtn);
