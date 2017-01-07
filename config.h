@@ -68,5 +68,7 @@ struct config_t {
 	int	upside_down;	// If set, flame animation is upside down. Text remains as-is
 
 	int	update_rate;	// Update rate target (FPS)
+
+	char	colour_order[3];
 };
 

@@ -1,6 +1,7 @@
 /* Torch implementation */
 
 #include <assert.h>
+#include <ctype.h>
 #include <err.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -50,7 +51,7 @@ static int repeatCount;
 
 static pthread_mutex_t torch_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-static void	setColourDimmed(uint16_t, uint8_t, uint8_t, uint8_t, uint8_t);
+static void	setColourDimmed(const char *, uint16_t, uint8_t, uint8_t, uint8_t, uint8_t);
 static int	sendLEDs(void);
 static uint16_t	random16(uint16_t, uint16_t);
 static void	sat8sub(uint8_t *, uint8_t);
@@ -137,6 +138,7 @@ int
 ini2conf(dictionary *ini, struct config_t *conf)
 {
 	int i;
+	char *s;
 
 	/* Look for parameters */
 	INI_GET_INT(leds_per_level);
@@ -173,6 +175,21 @@ ini2conf(dictionary *ini, struct config_t *conf)
 	INI_GET_INT8(blue_energy);
 	INI_GET_BOOL(upside_down);
 	INI_GET_INT(update_rate);
+
+	if ((s = ciniparser_getstring(ini, "torch:colour_order", NULL)) != NULL) {
+		if (strlen(s) != 3) {
+			fprintf(stderr, "colour_order must have 3 characters\n");
+			return(1);
+		}
+		for (i = 0; i < 3; i++) {
+			char c = toupper(s[i]);
+			if (c != 'R' && c != 'G' && c != 'B') {
+				fprintf(stderr, "colour_order must only consist of R, G, or B");
+				return(1);
+			}
+			conf->colour_order[i] = c;
+		}
+	}
 
 	/* Validate config */
 	if (conf->leds_per_level == -1) {
@@ -309,16 +326,36 @@ free_torch(void)
 	}
 }
 
+#define COLOUR_SET(idx, colname) do {				\
+	tmp = (colname * bright) >> 8;				\
+	switch (order[idx]) {					\
+        case 'R':						\
+		pixData->pixels[lednum].red = tmp;		\
+		break;						\
+								\
+	case 'G':						\
+		pixData->pixels[lednum].green = tmp;		\
+		break;						\
+								\
+	case 'B':						\
+		pixData->pixels[lednum].blue = tmp;		\
+		break;						\
+	}							\
+} while(0)
 static void
-setColourDimmed(uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue, uint8_t bright)
+setColourDimmed(const char *order, uint16_t lednum, uint8_t red, uint8_t green, uint8_t blue, uint8_t bright)
 {
+	uint8_t tmp;
 
 	if (lednum >= numleds)
 		return;
-	pixData->pixels[lednum].red = (red * bright) >> 8;
-	pixData->pixels[lednum].green = (green * bright) >> 8;
-	pixData->pixels[lednum].blue = (blue * bright) >> 8;
+
+	COLOUR_SET(0, red);
+	COLOUR_SET(1, green);
+	COLOUR_SET(2, blue);
 }
+
+#undef COLOUR_SET
 
 void
 splitargs(char *cmd, char **argv, int nargv, int *argc)
@@ -513,7 +550,7 @@ calcNextColours(struct config_t *conf)
 	for (i = 0; i < numleds; i++) {
 		if (i >= textStart && i < textEnd && textLayer[i - textStart] > 0) {
 			// overlay with text color
-			setColourDimmed(i, conf->text_red, conf->text_green, conf->text_blue,
+			setColourDimmed(conf->colour_order, i, conf->text_red, conf->text_green, conf->text_blue,
 			    (conf->brightness * textLayer[i - textStart]) >> 8);
 		} else {
 			if (conf->upside_down)
@@ -523,7 +560,7 @@ calcNextColours(struct config_t *conf)
 			e = nextEnergy[ei];
 			currentEnergy[ei] = e;
 			if (e > 250)
-				setColourDimmed(i, 170, 170, e, conf->brightness); // blueish extra-bright spark
+				setColourDimmed(conf->colour_order, i, e, e, e, conf->brightness); // white extra-bright spark
 			else {
 				if (e > 0) {
 					// energy to brightness is non-linear
@@ -534,10 +571,10 @@ calcNextColours(struct config_t *conf)
 					sat8add(&r, (eb * conf->red_energy) >> 8);
 					sat8add(&g, (eb * conf->green_energy) >> 8);
 					sat8add(&b, (eb * conf->blue_energy) >> 8);
-					setColourDimmed(i, r, g, b, conf->brightness);
+					setColourDimmed(conf->colour_order, i, r, g, b, conf->brightness);
 				} else {
 					// background, no energy
-					setColourDimmed(i, conf->red_bg, conf->green_bg, conf->blue_bg, conf->brightness);
+					setColourDimmed(conf->colour_order, i, conf->red_bg, conf->green_bg, conf->blue_bg, conf->brightness);
 				}
 			}
 		}
